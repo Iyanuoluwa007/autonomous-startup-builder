@@ -330,6 +330,20 @@ function reducer(st, act) {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
+// RESPONSIVE HOOK
+// ═══════════════════════════════════════════════════════════════════════════════
+function useIsMobile(breakpoint = 768) {
+  const [isMobile, setIsMobile] = useState(false);
+  useEffect(() => {
+    const check = () => setIsMobile(window.innerWidth < breakpoint);
+    check();
+    window.addEventListener("resize", check);
+    return () => window.removeEventListener("resize", check);
+  }, [breakpoint]);
+  return isMobile;
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
 // MICRO-COMPONENTS
 // ═══════════════════════════════════════════════════════════════════════════════
 const css = `
@@ -686,9 +700,10 @@ function InputPhase({ st, d, onGo }) {
   const [key, setKey] = useState("");
   const [showAdv, setShowAdv] = useState(false);
   const [showInfo, setShowInfo] = useState(null); // null | "demo" | "api" | "local"
+  const mob = useIsMobile();
   const ok = st.mode === "demo" ? st.apiKeySet : (st.idea.trim().length > 10 && st.apiKeySet);
 
-  const fieldStyle: React.CSSProperties = { width:"100%",padding:"12px 14px",background:T.bg,border:`1px solid ${T.border}`,borderRadius:10,color:T.text,fontSize:13,fontFamily:"inherit",resize:"vertical",lineHeight:1.6 };
+  const fieldStyle: React.CSSProperties = { width:"100%",padding:mob?"10px 12px":"12px 14px",background:T.bg,border:`1px solid ${T.border}`,borderRadius:10,color:T.text,fontSize:mob?12:13,fontFamily:"inherit",resize:"vertical",lineHeight:1.6 };
 
   const modes = [
     { id: "demo", label: "Demo", icon: "D", desc: "Fixed sample walkthrough", color: T.ok },
@@ -784,22 +799,22 @@ function InputPhase({ st, d, onGo }) {
   };
 
   return (
-    <div style={{ minHeight:"100vh",display:"flex",alignItems:"center",justifyContent:"center",padding:40,position:"relative" }}>
+    <div style={{ minHeight:"100vh",display:"flex",alignItems:"center",justifyContent:"center",padding:mob?16:40,position:"relative" }}>
       <div style={{ position:"absolute",width:500,height:500,background:`radial-gradient(circle,${T.accent}08,transparent 70%)`,top:"5%",left:"30%",pointerEvents:"none" }} />
       <div style={{ position:"absolute",width:400,height:400,background:`radial-gradient(circle,${T.purple}06,transparent 70%)`,bottom:"10%",right:"20%",pointerEvents:"none" }} />
 
       <div style={{ width:"100%",maxWidth:680,zIndex:1 }}>
         {/* Header */}
-        <div style={{ textAlign:"center",marginBottom:44 }}>
-          <div style={{ display:"inline-flex",alignItems:"center",justifyContent:"center",width:56,height:56,borderRadius:14,background:`linear-gradient(135deg,${T.accent},${T.accentMuted})`,boxShadow:`0 0 40px ${T.accent}25`,marginBottom:20,fontSize:24,fontWeight:700,color:"#fff" }}>S</div>
-          <h1 style={{ fontFamily:T.serif,fontSize:44,fontWeight:400,marginBottom:10,lineHeight:1.1,color:T.text }}>Autonomous Startup Builder</h1>
-          <p style={{ fontSize:15,color:T.sub,maxWidth:520,margin:"0 auto",lineHeight:1.6 }}>
+        <div style={{ textAlign:"center",marginBottom:mob?28:44 }}>
+          <div style={{ display:"inline-flex",alignItems:"center",justifyContent:"center",width:mob?44:56,height:mob?44:56,borderRadius:mob?10:14,background:`linear-gradient(135deg,${T.accent},${T.accentMuted})`,boxShadow:`0 0 40px ${T.accent}25`,marginBottom:mob?14:20,fontSize:mob?18:24,fontWeight:700,color:"#fff" }}>S</div>
+          <h1 style={{ fontFamily:T.serif,fontSize:mob?28:44,fontWeight:400,marginBottom:mob?8:10,lineHeight:1.1,color:T.text }}>Autonomous Startup Builder</h1>
+          <p style={{ fontSize:mob?13:15,color:T.sub,maxWidth:520,margin:"0 auto",lineHeight:1.6 }}>
             Describe your startup idea. Six AI agents will research, design, architect, market, and pitch it — powered by Claude, OpenAI, or your local Ollama instance.
           </p>
         </div>
 
         {/* ══════ MODE SWITCHER ══════ */}
-        <div style={{ padding: 4, background: T.card, border: `1px solid ${T.border}`, borderRadius: 14, marginBottom: 12, display: "flex", gap: 4 }}>
+        <div style={{ padding: 4, background: T.card, border: `1px solid ${T.border}`, borderRadius: 14, marginBottom: 12, display: "flex", flexDirection: mob ? "column" : "row", gap: 4 }}>
           {modes.map(m => {
             const active = st.mode === m.id;
             return (
@@ -945,7 +960,7 @@ function InputPhase({ st, d, onGo }) {
               {st.apiKeySet && <Badge color={T.ok}>Ready</Badge>}
             </div>
 
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 12 }}>
+            <div style={{ display: "grid", gridTemplateColumns: mob ? "1fr" : "1fr 1fr", gap: 10, marginBottom: 12 }}>
               <div>
                 <label style={{ display: "block", fontSize: 11, fontWeight: 600, color: T.sub, marginBottom: 4 }}>Server URL</label>
                 <input value={st.ollamaUrl} onChange={e => d({ type: "SET_OLLAMA", url: e.target.value })}
@@ -1086,6 +1101,7 @@ function Term({ logs }) {
 // EXECUTION PHASE
 // ═══════════════════════════════════════════════════════════════════════════════
 function ExecPhase({ st, d }) {
+  const mob = useIsMobile();
   const enabled = AGENT_DEFS.filter(a => st.config.agentsEnabled[a.id]);
   const done = enabled.filter(a => st.agentStates[a.id].status === "complete").length;
   const pct = enabled.length > 0 ? (done / enabled.length) * 100 : 0;
@@ -1095,29 +1111,101 @@ function ExecPhase({ st, d }) {
   return (
     <div style={{ minHeight:"100vh",display:"flex",flexDirection:"column" }}>
       {/* Header */}
-      <div style={{ padding:"14px 24px",borderBottom:`1px solid ${T.border}`,display:"flex",alignItems:"center",justifyContent:"space-between",flexShrink:0 }}>
-        <div style={{ display:"flex",alignItems:"center",gap:10 }}>
-          <div style={{ width:30,height:30,borderRadius:7,background:`linear-gradient(135deg,${T.accent},${T.accentMuted})`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:13,fontWeight:700,color:"#fff" }}>S</div>
-          <div>
-            <div style={{ fontSize:14,fontWeight:700,color:T.text }}>Autonomous Startup Builder</div>
-            <div style={{ fontSize:10,color:T.dim,maxWidth:350,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" }}>{st.idea.slice(0,80)}</div>
+      <div style={{ padding:mob?"10px 14px":"14px 24px",borderBottom:`1px solid ${T.border}`,display:"flex",alignItems:"center",justifyContent:"space-between",flexShrink:0,gap:8 }}>
+        <div style={{ display:"flex",alignItems:"center",gap:mob?6:10,minWidth:0,flex:1 }}>
+          <div style={{ width:mob?26:30,height:mob?26:30,borderRadius:7,background:`linear-gradient(135deg,${T.accent},${T.accentMuted})`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:mob?11:13,fontWeight:700,color:"#fff",flexShrink:0 }}>S</div>
+          <div style={{ minWidth:0 }}>
+            <div style={{ fontSize:mob?12:14,fontWeight:700,color:T.text,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis" }}>{mob ? "Startup Builder" : "Autonomous Startup Builder"}</div>
+            {!mob && <div style={{ fontSize:10,color:T.dim,maxWidth:350,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" }}>{st.idea.slice(0,80)}</div>}
           </div>
         </div>
-        <div style={{ display:"flex",alignItems:"center",gap:8 }}>
-          {st.phase === "running" && <Spin />}
+        <div style={{ display:"flex",alignItems:"center",gap:mob?4:8,flexShrink:0 }}>
+          {st.phase === "running" && <Spin size={mob?12:16} />}
           <Badge color={st.phase === "complete" ? T.ok : st.phase === "error" ? T.red : T.accent}>
-            {st.phase === "running" ? `${done}/${enabled.length}` : st.phase === "complete" ? "COMPLETE" : "ERROR"}
+            {st.phase === "running" ? `${done}/${enabled.length}` : st.phase === "complete" ? (mob ? "DONE" : "COMPLETE") : "ERROR"}
           </Badge>
-          {st.totalTokens > 0 && <Badge color={T.dim}>{st.totalTokens.toLocaleString()} tokens</Badge>}
+          {!mob && st.totalTokens > 0 && <Badge color={T.dim}>{st.totalTokens.toLocaleString()} tokens</Badge>}
           <button onClick={() => d({type:"RESET"})}
-            style={{ padding:"6px 14px",background:T.card,border:`1px solid ${T.border}`,borderRadius:6,color:T.sub,fontSize:11,cursor:"pointer",fontFamily:"inherit" }}>
-            New Build
+            style={{ padding:mob?"5px 10px":"6px 14px",background:T.card,border:`1px solid ${T.border}`,borderRadius:6,color:T.sub,fontSize:mob?10:11,cursor:"pointer",fontFamily:"inherit" }}>
+            {mob ? "New" : "New Build"}
           </button>
         </div>
       </div>
-      <div style={{ padding:"0 24px",flexShrink:0 }}><PBar pct={pct} /></div>
+      <div style={{ padding:mob?"0 14px":"0 24px",flexShrink:0 }}><PBar pct={pct} /></div>
 
-      {/* Body */}
+      {/* ── MOBILE: vertical stack with horizontal agent strip ── */}
+      {mob ? (
+        <div style={{ flex:1,display:"flex",flexDirection:"column",overflow:"hidden" }}>
+          {/* Agent horizontal scroll strip */}
+          <div style={{ flexShrink:0,borderBottom:`1px solid ${T.border}`,padding:"8px 10px",overflowX:"auto",display:"flex",gap:6,WebkitOverflowScrolling:"touch" }}>
+            {enabled.map((a,i) => {
+              const s = st.agentStates[a.id];
+              const isSel = st.selectedAgent === a.id;
+              const sCol = s.status==="complete"?T.ok:s.status==="running"?a.color:s.status==="error"?T.red:T.dim;
+              return (
+                <div key={a.id} onClick={() => d({type:"SELECT",id:a.id})}
+                  style={{ flexShrink:0,padding:"6px 12px",borderRadius:8,cursor:"pointer",display:"flex",alignItems:"center",gap:6,
+                    background:isSel?T.cardHover:"transparent",border:`1px solid ${isSel?a.color+"40":T.border}`,transition:"all .15s" }}>
+                  <div style={{ width:18,height:18,borderRadius:4,display:"flex",alignItems:"center",justifyContent:"center",background:sCol+"18",border:`1px solid ${sCol}30`,fontSize:7,fontWeight:700,color:sCol,fontFamily:T.mono,flexShrink:0 }}>
+                    {s.status==="complete"?"OK":s.status==="running"?"..":s.status==="error"?"!!":String(i+1).padStart(2,"0")}
+                  </div>
+                  <span style={{ fontSize:11,fontWeight:600,color:isSel?T.text:T.sub,whiteSpace:"nowrap" }}>{a.short}</span>
+                  {s.status === "running" && <Spin size={10} color={a.color} />}
+                </div>
+              );
+            })}
+          </div>
+
+          {/* Tabs */}
+          <div style={{ display:"flex",borderBottom:`1px solid ${T.border}`,padding:"0 10px",flexShrink:0 }}>
+            {["output","raw","terminal"].map(tab => (
+              <button key={tab} onClick={() => d({type:"TAB",tab})}
+                style={{ padding:"8px 12px",fontSize:11,fontWeight:600,fontFamily:"inherit",color:st.selectedTab===tab?T.accent:T.dim,background:"transparent",border:"none",borderBottom:`2px solid ${st.selectedTab===tab?T.accent:"transparent"}`,cursor:"pointer",textTransform:"capitalize" }}>
+                {tab === "raw" ? "JSON" : tab}
+              </button>
+            ))}
+          </div>
+
+          {/* Content */}
+          <div style={{ flex:1,padding:12,overflowY:"auto" }}>
+            {st.selectedTab === "terminal" && <Term logs={st.logs} />}
+            {st.selectedTab === "output" && sel && selSt && (
+              <div className="fi">
+                <div style={{ display:"flex",alignItems:"center",gap:8,marginBottom:14 }}>
+                  <div style={{ width:28,height:28,borderRadius:7,display:"flex",alignItems:"center",justifyContent:"center",background:sel.color+"18",border:`1px solid ${sel.color}30`,fontSize:11,fontWeight:700,color:sel.color,fontFamily:T.mono }}>{sel.short}</div>
+                  <div style={{ flex:1,minWidth:0 }}>
+                    <div style={{ fontSize:14,fontWeight:700,color:T.text }}>{sel.name}</div>
+                    <div style={{ fontSize:10,color:T.dim }}>{sel.description}</div>
+                  </div>
+                  <Badge color={selSt.status==="complete"?T.ok:selSt.status==="running"?sel.color:selSt.status==="error"?T.red:T.dim}>{selSt.status}</Badge>
+                </div>
+                {selSt.status === "running" && (
+                  <div style={{ display:"flex",alignItems:"center",gap:10,padding:16,background:T.card,borderRadius:10,border:`1px solid ${T.border}` }}>
+                    <Spin size={18} color={sel.color} />
+                    <div><div style={{ fontSize:12,color:T.text }}>Thinking...</div><div style={{ fontSize:10,color:T.dim }}>10-30 seconds per agent</div></div>
+                  </div>
+                )}
+                {selSt.status === "error" && (
+                  <div style={{ padding:14,background:T.red+"08",border:`1px solid ${T.red}25`,borderRadius:10 }}>
+                    <div style={{ fontSize:12,fontWeight:600,color:T.red,marginBottom:6 }}>Error</div>
+                    <pre style={{ fontSize:10,color:T.sub,fontFamily:T.mono,whiteSpace:"pre-wrap",wordBreak:"break-all" }}>{selSt.error}</pre>
+                  </div>
+                )}
+                {selSt.status === "complete" && selSt.output && (
+                  <div style={{ padding:14,background:T.card,border:`1px solid ${T.border}`,borderRadius:10 }}><JView data={selSt.output} /></div>
+                )}
+                {selSt.status === "idle" && <div style={{ padding:24,textAlign:"center",color:T.dim,fontSize:12 }}>Queued — waiting for dependencies.</div>}
+              </div>
+            )}
+            {st.selectedTab === "output" && !sel && <div style={{ padding:24,textAlign:"center",color:T.dim,fontSize:12 }}>Select an agent above.</div>}
+            {st.selectedTab === "raw" && selSt?.output && (
+              <pre style={{ background:"#060810",padding:12,borderRadius:10,border:`1px solid ${T.border}`,overflow:"auto",maxHeight:"60vh",fontFamily:T.mono,fontSize:10,lineHeight:1.6,color:T.sub,whiteSpace:"pre-wrap" }}>{JSON.stringify(selSt.output, null, 2)}</pre>
+            )}
+            {st.selectedTab === "raw" && !selSt?.output && <div style={{ padding:24,textAlign:"center",color:T.dim,fontSize:12 }}>No output yet.</div>}
+          </div>
+        </div>
+      ) : (
+      /* ── DESKTOP: sidebar + main panel grid ── */
       <div style={{ flex:1,display:"grid",gridTemplateColumns:"240px 1fr",overflow:"hidden" }}>
         {/* Sidebar */}
         <div style={{ borderRight:`1px solid ${T.border}`,padding:12,overflowY:"auto",display:"flex",flexDirection:"column",gap:4 }}>
@@ -1230,6 +1318,7 @@ function ExecPhase({ st, d }) {
           </div>
         </div>
       </div>
+      )}
     </div>
   );
 }
