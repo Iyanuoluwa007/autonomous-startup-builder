@@ -309,8 +309,8 @@ function reducer(st, act) {
   switch (act.type) {
     case "SET_IDEA": return { ...st, idea: act.v };
     case "SET_CONTEXT": return { ...st, context: act.v };
-    case "SET_MODE": return { ...st, mode: act.v, apiKeySet: act.v === "demo" ? true : st.apiKeySet, provider: act.v === "local" ? "ollama" : act.v === "demo" ? "claude" : st.provider };
-    case "SET_PROVIDER": return { ...st, provider: act.v, apiKeySet: false };
+    case "SET_MODE": return { ...st, mode: act.v, apiKeySet: act.v === "demo" ? true : act.v === "api" ? (st.provider === "claude_account") : false, provider: act.v === "local" ? "ollama" : act.v === "demo" ? "claude" : act.v === "api" ? "claude_account" : st.provider };
+    case "SET_PROVIDER": return { ...st, provider: act.v, apiKeySet: act.v === "claude_account" };
     case "SET_API_KEY": return { ...st, apiKeySet: true };
     case "SET_OLLAMA": return { ...st, ollamaUrl: act.url ?? st.ollamaUrl, ollamaModel: act.model ?? st.ollamaModel, apiKeySet: true };
     case "SET_CONFIG": return { ...st, config: { ...st.config, ...act.v } };
@@ -728,14 +728,14 @@ function InputPhase({ st, d, onGo }) {
       api: {
         title: "Live API Mode",
         color: T.accent,
-        body: "Make real API calls to generate outputs tailored to your exact idea. Three connection options: use your active Claude account (no key needed), bring your own Anthropic key, or use an OpenAI key.",
+        body: "Make real API calls to generate outputs tailored to your exact idea. Three connection options available depending on where you're running the app.",
         steps: [
-          "Claude Account: No key needed -- uses your logged-in Claude session. Best option to start.",
-          "Anthropic Key: Get a key from console.anthropic.com, paste it. You pay standard API rates.",
-          "OpenAI Key: Get a key from platform.openai.com. GPT-4o works but JSON may be less reliable.",
-          "Each build costs ~$0.10-0.30 depending on model. Key stored in browser memory only.",
+          "Claude Account: No key needed. Works inside Claude chat (artifacts) only. Will fail on Vercel/localhost.",
+          "Anthropic Key: Get from console.anthropic.com. Works everywhere — Vercel, localhost, Claude chat.",
+          "OpenAI Key: Get from platform.openai.com. GPT-4o works but JSON may be less reliable.",
+          "Cost: ~$0.10-0.30 per full build. Keys stored in browser memory only, cleared on refresh.",
         ],
-        note: "Claude Account is the easiest way to get real, tailored outputs without managing API keys. Anthropic Key gives you full control over model selection and usage tracking.",
+        note: "Running on Vercel or localhost? Use Anthropic Key or OpenAI Key. Claude Account only works inside Claude's artifact sandbox where a built-in API connection exists.",
       },
       local: {
         title: "Local Mode (Ollama)",
@@ -905,13 +905,19 @@ function InputPhase({ st, d, onGo }) {
 
             {/* Claude Account — no key, uses built-in API */}
             {st.provider === "claude_account" && (
-              <div style={{ padding: 14, background: T.cyan + "08", border: `1px solid ${T.cyan}20`, borderRadius: 10, display: "flex", alignItems: "flex-start", gap: 10 }}>
-                <div style={{ width: 8, height: 8, borderRadius: "50%", background: T.ok, boxShadow: `0 0 6px ${T.ok}`, marginTop: 4, flexShrink: 0 }} />
-                <div>
-                  <div style={{ fontSize: 12, fontWeight: 600, color: T.ok, marginBottom: 4 }}>Connected via Claude Account</div>
-                  <p style={{ fontSize: 11, color: T.sub, lineHeight: 1.5 }}>
-                    Uses your active Claude session to make API calls. No API key required — this routes through the built-in Anthropic connection. Best option if you don't have a separate API key.
-                  </p>
+              <div style={{ padding: 14, background: T.cyan + "08", border: `1px solid ${T.cyan}20`, borderRadius: 10 }}>
+                <div style={{ display: "flex", alignItems: "flex-start", gap: 10, marginBottom: 10 }}>
+                  <div style={{ width: 8, height: 8, borderRadius: "50%", background: T.ok, boxShadow: `0 0 6px ${T.ok}`, marginTop: 4, flexShrink: 0 }} />
+                  <div>
+                    <div style={{ fontSize: 12, fontWeight: 600, color: T.ok, marginBottom: 4 }}>Connected via Claude Account</div>
+                    <p style={{ fontSize: 11, color: T.sub, lineHeight: 1.5 }}>
+                      Routes API calls through Claude's built-in connection. No API key needed.
+                    </p>
+                  </div>
+                </div>
+                <div style={{ padding: "8px 12px", background: T.warn + "08", border: `1px solid ${T.warn}15`, borderRadius: 8 }}>
+                  <span style={{ fontSize: 10, fontWeight: 700, color: T.warn }}>IMPORTANT </span>
+                  <span style={{ fontSize: 10, color: T.sub }}>This only works when running inside Claude's chat (artifacts). If you deployed to Vercel or run locally, use <strong style={{color:T.accent}}>Anthropic Key</strong> or <strong style={{color:T.ok}}>OpenAI Key</strong> instead — Claude Account will return auth errors on external hosts.</span>
                 </div>
               </div>
             )}
@@ -1499,7 +1505,7 @@ export default function App() {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
-              model: "claude-sonnet-4-20250514",
+              model: st.config.model || "claude-sonnet-4-20250514",
               max_tokens: 4000,
               messages: [{ role: "user", content: prompt }],
             }),
