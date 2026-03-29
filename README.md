@@ -2,7 +2,7 @@
 
 **Multi-Agent AI Platform for End-to-End Startup Generation**
 
-> Describe a startup idea. Six autonomous AI agents will research the market, design the product, architect the backend, plan the go-to-market strategy, and build your investor pitch — all orchestrated through a single command.
+> Describe a startup idea. Six autonomous AI agents will research the market, design the product, architect the backend, plan the go-to-market strategy, and build your investor pitch all orchestrated through a single command.
 
 Built by **Oke Iyanuoluwa Enoch** — Independent Robotics & AI Engineer | MSc Robotics & Automation, University of Salford
 
